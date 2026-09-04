@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DVK Физика — навигатор по лекциям</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0b0e1a;
+            color: #e0e7f0;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #2a3a5e;
+        }
+        .header h1 {
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { color: #8899bb; font-size: 16px; margin-top: 4px; }
+        .breadcrumb {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 12px;
+            margin-bottom: 25px;
+            padding: 12px 18px;
+            background: #101826;
+            border-radius: 12px;
+            border: 1px solid #1f2d4a;
+            font-size: 15px;
+            color: #8899bb;
+        }
+        .breadcrumb span { color: #c8d6f0; font-weight: 600; }
+        .breadcrumb .crumb-link {
+            color: #60a5fa;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: 0.2s;
+        }
+        .breadcrumb .crumb-link:hover { color: #93c5fd; }
+        .breadcrumb .sep { color: #4a5a7a; }
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+        .level-btn {
+            background: #161f33;
+            border: 1px solid #2a3a5e;
+            color: #c8d6f0;
+            padding: 18px 14px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .level-btn:hover { background: #1f2d4a; border-color: #60a5fa; transform: translateY(-3px); }
+        .level-btn .sub {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: #7a8aaa;
+            margin-top: 4px;
+        }
+        .back-btn {
+            background: transparent;
+            border: 1px solid #2a3a5e;
+            color: #7a8aaa;
+            padding: 10px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+            margin-bottom: 16px;
+        }
+        .back-btn:hover { border-color: #60a5fa; color: #c8d6f0; }
+        .parts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .part-item {
+            background: #1a243b;
+            border-radius: 12px;
+            padding: 14px 20px;
+            border-left: 4px solid #2a4a7a;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: 0.2s;
+        }
+        .part-item:hover { background: #1f2d4a; border-left-color: #60a5fa; }
+        .part-item .name { font-size: 16px; font-weight: 500; color: #e8efff; }
+        .part-item .lecture-link {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 8px 24px;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: 0.2s;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+        }
+        .part-item .lecture-link:hover { background: #3b82f6; transform: scale(1.03); }
+        .part-item .lecture-link.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            background: #4a5a7a;
+        }
+        .empty-msg { color: #5a6f92; font-size: 18px; text-align: center; padding: 40px 0; }
+        @media (max-width: 600px) {
+            .header h1 { font-size: 32px; }
+            .level-grid { grid-template-columns: 1fr 1fr; }
+            .level-btn { font-size: 14px; padding: 12px 8px; }
+            .part-item { flex-direction: column; align-items: stretch; }
+            .part-item .lecture-link { text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>⚛️ DVK Физика</h1>
+            <p>Навигатор по лекциям</p>
+        </header>
+
+        <div class="breadcrumb" id="breadcrumb">
+            <span>📂</span>
+            <span class="crumb-link" onclick="goToSections()">Разделы</span>
+            <span class="sep">›</span>
+            <span id="crumbSection" style="display:none;"></span>
+            <span class="sep" id="crumbSep" style="display:none;">›</span>
+            <span id="crumbLecture" style="display:none;"></span>
+        </div>
+
+        <div id="contentArea"></div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1.  ВАШИ ДАННЫЕ — ЗДЕСЬ ВСЕ ЛЕКЦИИ И ССЫЛКИ
+        // ============================================================
+        const physicsData = {
+            "Механика": {
+                lectures: [
+                    { title: "Лекция 1: Основные математические операции и термины кинематики. Некоторые необходимые сведения из математики. Векторы и операции с ними. Производные, в том числе частные. Дифференциальные операторы. Интегралы неопределенные и определенные. Основные термины кинематики ", parts: [{ name: "Часть 1: Важность математики и информатики для физики", url: "https://rutube.ru/play/embed/d8354946142491f01dfe54f004860a15/" }, { name: "Часть 2: Векторы и операции с ними", url: "https://rutube.ru/play/embed/62f85404c88f83c2eab1b2654dc0a743/" }, { name: "Часть 3: Векторы и операции с ними 2", url: "https://rutube.ru/play/embed/eee75f25f8a64fb74017c3c7cf55d3aa/" }, { name: "Часть 4: Введение понятия производной, вычисление производных некоторых функций", url: "https://rutube.ru/play/embed/9d15354ca3f65e7b113b93a77cf6b7a5/"}, { name: "Часть 5: Частные производные и дифференциальные операторы", url: "https://rutube.ru/play/embed/ee88524c9b964b926cc0a8906525b4b5/"}, { name: "Часть 6: Понятие интеграла. Неопределенный и определенный интеграл", url: "https://rutube.ru/play/embed/d8784ea5a7db70bb465d7c2b5d41a3d0/"}, { name: "Часть 7: Основные понятия кинематики", url: "https://rutube.ru/play/embed/23524f3cd0839c5f6f7e4ac0b490dfc7/"}] },
+                    { title: "Лекция 2: Динамика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_2_1" }, { name: "Часть 2: ", url: "ССЫЛКА_2_2" }, { name: "Часть 3: ", url: "ССЫЛКА_2_3" }, { name: "Часть 4: ", url: "ССЫЛКА_2_4" }] },
+                    { title: "Лекция 3: Законы сохранения", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_3_1" }, { name: "Часть 2: ", url: "ССЫЛКА_3_2" }, { name: "Часть 3: ", url: "ССЫЛКА_3_3" }, { name: "Часть 4: ", url: "ССЫЛКА_3_4" }] },
+                    { title: "Лекция 4: Статика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_4_1" }, { name: "Часть 2: ", url: "ССЫЛКА_4_2" }, { name: "Часть 3: ", url: "ССЫЛКА_4_3" }, { name: "Часть 4: ", url: "ССЫЛКА_4_4" }] },
+                    { title: "Лекция 5: Гравитация", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_5_1" }, { name: "Часть 2: ", url: "ССЫЛКА_5_2" }, { name: "Часть 3: ", url: "ССЫЛКА_5_3" }, { name: "Часть 4: ", url: "ССЫЛКА_5_4" }] },
+                    { title: "Лекция 6: Колебания", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_6_1" }, { name: "Часть 2: ", url: "ССЫЛКА_6_2" }, { name: "Часть 3: ", url: "ССЫЛКА_6_3" }, { name: "Часть 4: ", url: "ССЫЛКА_6_4" }] },
+                    { title: "Лекция 7: Волны", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_7_1" }, { name: "Часть 2: ", url: "ССЫЛКА_7_2" }, { name: "Часть 3: ", url: "ССЫЛКА_7_3" }, { name: "Часть 4: ", url: "ССЫЛКА_7_4" }] },
+                    { title: "Лекция 8: Гидростатика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_8_1" }, { name: "Часть 2: ", url: "ССЫЛКА_8_2" }, { name: "Часть 3: ", url: "ССЫЛКА_8_3" }, { name: "Часть 4: ", url: "ССЫЛКА_8_4" }] },
+                    { title: "Лекция 9: Гидродинамика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_9_1" }, { name: "Часть 2: ", url: "ССЫЛКА_9_2" }, { name: "Часть 3: ", url: "ССЫЛКА_9_3" }, { name: "Часть 4: ", url: "ССЫЛКА_9_4" }] },
+                    { title: "Лекция 10: Релятивистская механика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_10_1" }, { name: "Часть 2: ", url: "ССЫЛКА_10_2" }, { name: "Часть 3: ", url: "ССЫЛКА_10_3" }, { name: "Часть 4: ", url: "ССЫЛКА_10_4" }] },
+                    { title: "Лекция 11: Механика твёрдого тела", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_11_1" }, { name: "Часть 2: ", url: "ССЫЛКА_11_2" }, { name: "Часть 3: ", url: "ССЫЛКА_11_3" }, { name: "Часть 4: ", url: "ССЫЛКА_11_4" }] },
+                    { title: "Лекция 12: Неинерциальные системы", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_12_1" }, { name: "Часть 2: ", url: "ССЫЛКА_12_2" }, { name: "Часть 3: ", url: "ССЫЛКА_12_3" }, { name: "Часть 4: ", url: "ССЫЛКА_12_4" }] },
+                    { title: "Лекция 13: Упругие деформации", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_13_1" }, { name: "Часть 2: ", url: "ССЫЛКА_13_2" }, { name: "Часть 3: ", url: "ССЫЛКА_13_3" }, { name: "Часть 4: ", url: "ССЫЛКА_13_4" }] },
+                    { title: "Лекция 14: Механика жидкостей", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_14_1" }, { name: "Часть 2: ", url: "ССЫЛКА_14_2" }, { name: "Часть 3: ", url: "ССЫЛКА_14_3" }, { name: "Часть 4: ", url: "ССЫЛКА_14_4" }] },
+                    { title: "Лекция 15: Законы подобия", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_15_1" }, { name: "Часть 2: ", url: "ССЫЛКА_15_2" }, { name: "Часть 3: ", url: "ССЫЛКА_15_3" }, { name: "Часть 4: ", url: "ССЫЛКА_15_4" }] },
+                    { title: "Лекция 16: Обобщённая механика", parts: [{ name: "Часть 1: ", url: "ССЫЛКА_16_1" }, { name: "Часть 2: ", url: "ССЫЛКА_16_2" }, { name: "Часть 3: ", url: "ССЫЛКА_16_3" }, { name: "Часть 4: ", url: "ССЫЛКА_16_4" }] }
+                ]
+            },
+            "Молекулярная физика": {
+                lectures: [
+                    { title: "Лекция 1: Основы МКТ", parts: [{ name: "Часть 1: Броуновское движение", url: "ССЫЛКА_МФ_1_1" }, { name: "Часть 2: Температура и давление", url: "ССЫЛКА_МФ_1_2" }] }
+                ]
+            },
+            "Электричество и магнетизм": {
+                lectures: [
+                    { title: "Лекция 1: Электростатика", parts: [{ name: "Часть 1: Закон Кулона", url: "ССЫЛКА_ЭМ_1_1" }, { name: "Часть 2: Напряжённость поля", url: "ССЫЛКА_ЭМ_1_2" }] }
+                ]
+            },
+            "Оптика": {
+                lectures: [
+                    { title: "Лекция 1: Геометрическая оптика", parts: [{ name: "Часть 1: Отражение и преломление", url: "ССЫЛКА_ОП_1_1" }, { name: "Часть 2: Линзы", url: "ССЫЛКА_ОП_1_2" }] }
+                ]
+            },
+            "Атомная физика": {
+                lectures: [
+                    { title: "Лекция 1: Модели атома", parts: [{ name: "Часть 1: Модель Томсона", url: "ССЫЛКА_АТ_1_1" }, { name: "Часть 2: Модель Резерфорда", url: "ССЫЛКА_АТ_1_2" }] }
+                ]
+            }
+        };
+
+        // ============================================================
+        // 2.  ЛОГИКА НАВИГАЦИИ
+        // ============================================================
+        let currentSection = null;
+        let currentLecture = null;
+
+        function renderSections() {
+            currentSection = null;
+            currentLecture = null;
+            updateBreadcrumb();
+            const area = document.getElementById('contentArea');
+            const names = Object.keys(physicsData);
+            let html = `<div class="level-grid">`;
+            names.forEach(name => {
+                const count = physicsData[name].lectures ? physicsData[name].lectures.length : 0;
+                html += `<button class="level-btn" onclick="renderLectures('${name}')">${name}<span class="sub">${count} лекций</span></button>`;
+            });
+            html += `</div>`;
+            area.innerHTML = html;
+        }
+
+        function renderLectures(sectionName) {
+            currentSection = sectionName;
+            currentLecture = null;
+            updateBreadcrumb();
+            const section = physicsData[sectionName];
+            if (!section || !section.lectures) { renderSections(); return; }
+            const area = document.getElementById('contentArea');
+            let html = `<button class="back-btn" onclick="renderSections()">← Ко всем разделам</button><div class="level-grid">`;
+            section.lectures.forEach((lec, index) => {
+                const count = lec.parts ? lec.parts.length : 0;
+                html += `<button class="level-btn" onclick="renderParts('${sectionName}', ${index})">${lec.title}<span class="sub">${count} частей</span></button>`;
+            });
+            html += `</div>`;
+            area.innerHTML = html;
+        }
+
+        function renderParts(sectionName, lectureIndex) {
+            currentSection = sectionName;
+            currentLecture = lectureIndex;
+            updateBreadcrumb();
+            const section = physicsData[sectionName];
+            if (!section || !section.lectures || !section.lectures[lectureIndex]) { renderSections(); return; }
+            const lecture = section.lectures[lectureIndex];
+            const area = document.getElementById('contentArea');
+            let html = `<button class="back-btn" onclick="renderLectures('${sectionName}')">← К списку лекций</button>`;
+            html += `<h2 style="color:#90b0f0; margin-bottom:16px; font-size:24px;">${lecture.title}</h2><div class="parts-list">`;
+            if (lecture.parts && lecture.parts.length > 0) {
+                lecture.parts.forEach(part => {
+                    const disabled = !part.url || part.url.includes('ССЫЛКА');
+                    html += `<div class="part-item"><span class="name">${part.name}</span><a href="${part.url}" target="_blank" class="lecture-link ${disabled ? 'disabled' : ''}">▶ Смотреть</a></div>`;
+                });
+            } else {
+                html += `<div class="empty-msg">📭 В этой лекции пока нет частей.</div>`;
+            }
+            html += `</div>`;
+            area.innerHTML = html;
+        }
+
+        function updateBreadcrumb() {
+            const crumbSection = document.getElementById('crumbSection');
+            const crumbLecture = document.getElementById('crumbLecture');
+            const crumbSep = document.getElementById('crumbSep');
+            if (currentSection) {
+                crumbSection.style.display = 'inline';
+                crumbSection.textContent = currentSection;
+                crumbSection.className = 'crumb-link';
+                crumbSection.onclick = () => renderLectures(currentSection);
+                if (currentLecture !== null) {
+                    crumbSep.style.display = 'inline';
+                    const lec = physicsData[currentSection].lectures[currentLecture];
+                    crumbLecture.style.display = 'inline';
+                    crumbLecture.textContent = lec ? lec.title : '...';
+                    crumbLecture.className = '';
+                } else {
+                    crumbSep.style.display = 'none';
+                    crumbLecture.style.display = 'none';
+                }
+            } else {
+                crumbSection.style.display = 'none';
+                crumbSep.style.display = 'none';
+                crumbLecture.style.display = 'none';
+            }
+        }
+
+        function goToSections() { renderSections(); }
+
+        // ============================================================
+        // 3.  ЗАПУСК
+        // ============================================================
+        renderSections();
+    </script>
+</body>
+</html>
