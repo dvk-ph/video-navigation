@@ -236,8 +236,8 @@
             "Механика 1 семестр 15 лекций": {
                 lectures: [
                     { title: "Лекция 1: Основные математические операции и термины кинематики. Некоторые необходимые сведения из математики. Векторы и операции с ними. Производные, в том числе частные. Дифференциальные операторы. Интегралы неопределенные и определенные. Основные термины кинематики ", 
-			parts: [{ name: "Часть 1: Важность математики и информатики для физики", urls: { none: "https://rutube.ru/play/embed/d8354946142491f01dfe54f004860a15/", ru: "https://rutube.ru/play/embed/d8354946142491f01dfe54f004860a15/", en: "ССЫЛКА_АНГЛИЙСКИЕ", uz: "ССЫЛКА_УЗБЕКСКИЕ" } }, 
-				{ name: "Часть 2: Векторы и операции с ними", urls: { none: "https://rutube.ru/play/embed/62f85404c88f83c2eab1b2654dc0a743/", ru: "https://rutube.ru/play/embed/62f85404c88f83c2eab1b2654dc0a743/", en: "ССЫЛКА_АНГЛИЙСКИЕ", uz: "ССЫЛКА_УЗБЕКСКИЕ" } }, 
+			parts: [{ name: "Часть 1: Важность математики и информатики для физики", urls: { none: "https://rutube.ru/play/embed/d8354946142491f01dfe54f004860a15/", ru: "https://rutube.ru/play/embed/e4822b1d65606ed4c49331d3a98101db/", en: "https://rutube.ru/play/embed/df5f9e874ab3c0b64db6b36dd3f015f6/", uz: "https://rutube.ru/play/embed/f9ae40bcdc6f0563f9d8b301d3c687da/" } }, 
+				{ name: "Часть 2: Векторы и операции с ними", urls: { none: "https://rutube.ru/play/embed/62f85404c88f83c2eab1b2654dc0a743/", ru: "https://rutube.ru/play/embed/d31d5903621af4a2898abe381991c646/", en: "https://rutube.ru/play/embed/f8077e02a8cb271f1d177701cf15be46/", uz: "https://rutube.ru/play/embed/21d81dda871713bd13ad856a73ad7f18/" } }, 
 				{ name: "Часть 3: Векторы и операции с ними 2", urls: { none: "https://rutube.ru/play/embed/eee75f25f8a64fb74017c3c7cf55d3aa/", ru: "https://rutube.ru/play/embed/eee75f25f8a64fb74017c3c7cf55d3aa/", en: "ССЫЛКА_АНГЛИЙСКИЕ", uz: "ССЫЛКА_УЗБЕКСКИЕ" } }, 
 				{ name: "Часть 4: Введение понятия производной, вычисление производных некоторых функций", urls: { none: "https://rutube.ru/play/embed/9d15354ca3f65e7b113b93a77cf6b7a5/", ru: "https://rutube.ru/play/embed/9d15354ca3f65e7b113b93a77cf6b7a5/", en: "ССЫЛКА_АНГЛИЙСКИЕ", uz: "ССЫЛКА_УЗБЕКСКИЕ" }}, 
 				{ name: "Часть 5: Частные производные и дифференциальные операторы", urls: { none: "https://rutube.ru/play/embed/ee88524c9b964b926cc0a8906525b4b5/", ru: "https://rutube.ru/play/embed/ee88524c9b964b926cc0a8906525b4b5/", en: "ССЫЛКА_АНГЛИЙСКИЕ", uz: "ССЫЛКА_УЗБЕКСКИЕ" }}, 
@@ -867,10 +867,23 @@
         function goToSections() { renderSections(); }
 // ===== ВЫБОР ЯЗЫКА =====
 function selectLanguage(lang) {
-    currentLanguage = lang;
+    // Сохраняем выбор языка
     localStorage.setItem('dvk_language', lang);
-    document.getElementById('languageScreen').style.display = 'none';
     
+    // Сохраняем позицию (если мы внутри лекции)
+    if (currentSection !== null) {
+        localStorage.setItem('dvk_last_section', currentSection);
+        if (currentLecture !== null) {
+            localStorage.setItem('dvk_last_lecture', currentLecture);
+        } else {
+            localStorage.removeItem('dvk_last_lecture');
+        }
+    } else {
+        localStorage.removeItem('dvk_last_section');
+        localStorage.removeItem('dvk_last_lecture');
+    }
+    
+    // Показываем уведомление
     const names = {
         'none': 'Без субтитров',
         'ru': 'Русские субтитры',
@@ -879,22 +892,37 @@ function selectLanguage(lang) {
     };
     showToast(`✅ Выбран режим: ${names[lang]}`);
     
-    // Перерисовываем, чтобы подставились нужные ссылки
-    if (currentSection === null) {
-        renderSections();
-    } else if (currentLecture === null) {
-        renderLectures(currentSection);
-    } else {
-        renderParts(currentSection, currentLecture);
-    }
+    // Перезагружаем страницу через 0,5 сек
+    setTimeout(() => {
+        location.reload();
+    }, 500);
 }
-
 // ===== АВТОМАТИЧЕСКИЙ ВЫБОР ПРИ ПОВТОРНОМ ВИЗИТЕ =====
 window.addEventListener('DOMContentLoaded', () => {
     const savedLang = localStorage.getItem('dvk_language');
+    
     if (savedLang) {
+        // Язык уже выбран ранее — скрываем экран выбора
+        currentLanguage = savedLang;
         document.getElementById('languageScreen').style.display = 'none';
+        
+        // Восстанавливаем позицию
+        const lastSection = localStorage.getItem('dvk_last_section');
+        const lastLecture = localStorage.getItem('dvk_last_lecture');
+        
+        if (lastSection) {
+            currentSection = lastSection;
+            if (lastLecture !== null) {
+                currentLecture = parseInt(lastLecture);
+                renderParts(lastSection, currentLecture);
+            } else {
+                renderLectures(lastSection);
+            }
+        } else {
+            renderSections();
+        }
     } else {
+        // Первый заход — показываем экран выбора
         document.getElementById('languageScreen').style.display = 'flex';
     }
 });
@@ -902,11 +930,45 @@ window.addEventListener('DOMContentLoaded', () => {
 function showLanguageScreen() {
     document.getElementById('languageScreen').style.display = 'flex';
 }
+// ============================================================
+// ФУНКЦИЯ УВЕДОМЛЕНИЙ (TOAST)
+// ============================================================
+function showToast(msg) {
+    const el = document.getElementById('toastMessage');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.opacity = '1';
+    el.style.transform = 'translateX(-50%) translateY(0px)';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-50%) translateY(20px)';
+    }, 2500);
+}
 
         // ============================================================
         // 3.  ЗАПУСК
         // ============================================================
         renderSections();
     </script>
+<div id="toastMessage" style="
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a2a4a;
+    border: 1px solid #3b82f6;
+    color: #e0e7f0;
+    padding: 12px 24px;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.4s ease;
+    white-space: nowrap;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+"></div>
 </body>
 </html>
