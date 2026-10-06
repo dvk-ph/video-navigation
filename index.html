@@ -895,7 +895,7 @@ function selectLanguage(lang) {
     // Перезагружаем страницу через 0,5 сек
     setTimeout(() => {
         location.reload();
-    }, 500);
+    }, 1500);//время перед обновлением страницы 1500миллисекунд=1,5секунды
 }
 // ===== АВТОМАТИЧЕСКИЙ ВЫБОР ПРИ ПОВТОРНОМ ВИЗИТЕ =====
 window.addEventListener('DOMContentLoaded', () => {
@@ -943,7 +943,7 @@ function showToast(msg) {
     el._timer = setTimeout(() => {
         el.style.opacity = '0';
         el.style.transform = 'translateX(-50%) translateY(20px)';
-    }, 2500);
+    }, 4000);//время показа объявления 4000 миллисекунд=4секунды
 }
 
         // ============================================================
